@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "কৃষি পূর্বাভাস",
+    "slug": "agri-link-bangladesh",
+    "scheme": "agri-link",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router"
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "android": {
+      "package": "bd.agrilink.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F1F8E9"
+      }
+    }
+  }
+}

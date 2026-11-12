@@ -1,0 +1,26 @@
+{
+  "name": "bangladesh-agri-link",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bangla-first agricultural forecasting and market linkage platform for Bangladesh",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "apps/api",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev --workspace @agri-link/api",
+    "dev:web": "npm run web --workspace @agri-link/mobile",
+    "dev:mobile": "npm run start --workspace @agri-link/mobile",
+    "build": "npm run build --workspace @agri-link/api && npm run build:web --workspace @agri-link/mobile",
+    "typecheck": "npm run typecheck --workspace @agri-link/api && npm run typecheck --workspace @agri-link/mobile",
+    "db:generate": "npm run db:generate --workspace @agri-link/api",
+    "db:migrate": "npm run db:migrate --workspace @agri-link/api",
+    "db:deploy": "npm run db:deploy --workspace @agri-link/api"
+  },
+  "devDependencies": {
+    "@expo/cli": "^58.1.20"
+  }
+}

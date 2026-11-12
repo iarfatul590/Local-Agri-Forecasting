@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.expo/
+web-build/
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+apps/api/src/generated/
