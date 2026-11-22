@@ -18,7 +18,8 @@
     "typecheck": "npm run typecheck --workspace @agri-link/api && npm run typecheck --workspace @agri-link/mobile",
     "db:generate": "npm run db:generate --workspace @agri-link/api",
     "db:migrate": "npm run db:migrate --workspace @agri-link/api",
-    "db:deploy": "npm run db:deploy --workspace @agri-link/api"
+    "db:deploy": "npm run db:deploy --workspace @agri-link/api",
+    "db:seed": "npm run db:seed --workspace @agri-link/api"
   },
   "devDependencies": {
     "@expo/cli": "^58.1.20"

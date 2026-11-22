@@ -13,7 +13,7 @@ apps/
 package.json           npm workspace scripts
 ```
 
-The mobile app provides Bangla-first dashboard and operational modules for farmer, crop, forecast, buyer, collection, finance, and report workflows. User-entered records and endpoint settings are stored on-device with AsyncStorage. The API currently provides a health endpoint and the Prisma data model; production authentication, provider integrations, and data-backed weather/market routes still need to be configured before production use.
+The mobile app provides Bangla-first dashboard and operational modules for farmer, crop, forecast, buyer, collection, finance, and report workflows. API accounts and core farmer, crop, buyer/demand, and collection workflows use the authenticated server; finance, reports, and forecast notes remain device-local. API tokens use platform secure storage where available. OTP delivery is console-only for local development; production SMS delivery still needs to be configured.
 
 ## Requirements
 
@@ -36,9 +36,10 @@ The mobile app provides Bangla-first dashboard and operational modules for farme
    ```sh
    npm run db:generate
    npm run db:migrate
+   npm run db:seed
    ```
 
-   `db:migrate` runs Prisma's development migration workflow and prompts for a migration name.
+   `db:migrate` runs Prisma's development migration workflow and prompts for a migration name. The authentication session table is part of this migration. `db:seed` idempotently adds a small starter set of upazilas, crops, and collection centers; replace or extend it with authoritative local master data before real operations.
 
 4. Start the API and Expo app in separate terminals:
 
@@ -73,6 +74,8 @@ npm run build
 The mobile package builds a static web export with Expo. Its dashboard totals and chart are calculated from locally entered data. Crop forecast uses a three-value moving average and is not a guaranteed prediction. API endpoint settings are stored on-device; provider secrets must remain in `apps/api/.env` and must never use `EXPO_PUBLIC_*` variables.
 
 The mobile workflow currently stores data locally and does not send SMS, WhatsApp, or voice messages. Dashboard and reports can be filtered by an upazila already entered in a record. Bengali numerals are accepted in numeric fields and normalized before calculations. Matching uses exact crop-name matches between farmer and buyer entries. Weather and market data are not fabricated; configure a real endpoint before expecting live values.
+
+The API OTP routes are `POST /api/auth/otp/request` and `POST /api/auth/otp/verify`; refresh-token rotation and logout are at `POST /api/auth/refresh` and `POST /api/auth/logout`. Authenticated clients can read master upazilas from `GET /api/upazilas` and staff collection centers from `GET /api/collection/centers`. In development, the OTP is printed only to the API server console. Initial public registration is limited to farmer and buyer roles; administrative and field-worker accounts must be provisioned separately. Protected CRUD routes are under `/api/farmers`, `/api/crops`, `/api/buyers`, `/api/demands`, and `/api/collection`.
 
 ## Deployment outline
 

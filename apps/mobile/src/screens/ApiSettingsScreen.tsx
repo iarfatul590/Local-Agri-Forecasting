@@ -146,8 +146,8 @@ export default function ApiSettingsScreen({ config, onSave }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: "#f2f7f2", flex: 1 },
-  content: { padding: 18, paddingBottom: 28 },
-  help: { color: "#63766c", fontSize: 13, lineHeight: 20, marginBottom: 12 },
-  code: { backgroundColor: "#f2f7f2", borderRadius: 8, color: "#19352a", fontSize: 12, marginBottom: 8, padding: 10 },
+  screen: { backgroundColor: "#f4f7f2", flex: 1 },
+  content: { alignSelf: "center", maxWidth: 960, padding: 18, paddingBottom: 32, width: "100%" },
+  help: { color: "#68796f", fontSize: 13, lineHeight: 20, marginBottom: 12 },
+  code: { backgroundColor: "#f4f7f2", borderColor: "#e3eae2", borderRadius: 9, borderWidth: 1, color: "#183a2d", fontSize: 12, marginBottom: 8, padding: 11 },
 });

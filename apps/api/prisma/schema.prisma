@@ -112,6 +112,7 @@ model User {
   buyer           BuyerProfile?
   fieldWorker     FieldWorkerProfile?
   otpChallenges   PhoneOtpChallenge[]
+  authSessions    AuthSession[]
   notifications   Notification[]
   feesPaid        FeeCalculation[]    @relation("FeePayer")
   engagement      EngagementEvent[]
@@ -132,6 +133,18 @@ model PhoneOtpChallenge {
 
   @@index([phone, createdAt])
   @@index([expiresAt, consumedAt])
+}
+
+model AuthSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique @db.VarChar(64)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, expiresAt])
 }
 
 model Upazila {

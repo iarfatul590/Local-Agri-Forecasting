@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { navigationItems, type ModuleId } from "../data/navigation";
 import type { ApiConfig, WorkspaceData } from "../data/types";
 import { formatBengaliNumber, movingAverage, parseYearValues } from "../services/forecast";
@@ -7,10 +7,13 @@ import { EmptyState, Notice, PageTitle, Panel, SectionTitle } from "../component
 type Props = {
   data: WorkspaceData;
   config: ApiConfig;
+  apiConnected: boolean;
   onNavigate: (module: ModuleId) => void;
 };
 
-export default function DashboardScreen({ data, config, onNavigate }: Props) {
+export default function DashboardScreen({ data, config, apiConnected, onNavigate }: Props) {
+  const { width } = useWindowDimensions();
+  const desktop = width >= 980;
   const collected = data.collection.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
   const monthlyIncome = data.finance
     .filter((item) => item.createdAt.slice(0, 7) === new Date().toISOString().slice(0, 7))
@@ -34,13 +37,24 @@ export default function DashboardScreen({ data, config, onNavigate }: Props) {
   ];
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <PageTitle title="কৃষি সংযোগ" subtitle="আপনার এলাকার কৃষি কার্যক্রমের সারসংক্ষেপ" />
+    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, desktop ? styles.contentWide : null]}>
+      <View style={styles.hero}>
+        <View style={styles.heroCopy}>
+          <Text style={styles.heroEyebrow}>আপনার কর্মক্ষেত্র</Text>
+          <Text style={styles.heroTitle}>কৃষির হিসাব, এক জায়গায়</Text>
+          <Text style={styles.heroSubtitle}>স্থানীয় কৃষি কার্যক্রমের তথ্য সহজে দেখুন ও পরিচালনা করুন।</Text>
+        </View>
+        <View style={styles.heroBadge}>
+          <Text style={styles.heroBadgeLabel}>ডেটা মোড</Text>
+          <Text style={styles.heroBadgeValue}>{apiConnected ? "API সংযুক্ত" : "এই ডিভাইসে"}</Text>
+        </View>
+      </View>
+      <PageTitle title="ড্যাশবোর্ড" subtitle="আপনার এলাকার কৃষি কার্যক্রমের সারসংক্ষেপ" />
       <Notice tone="warning">বাজারদর ও আবহাওয়ার live তথ্য যুক্ত না হওয়া পর্যন্ত কোনো নমুনা সংখ্যা দেখানো হচ্ছে না।</Notice>
 
       <View style={styles.metricGrid}>
         {metrics.map((metric) => (
-          <Panel key={metric.label} style={styles.metricCard}>
+          <Panel key={metric.label} style={[styles.metricCard, desktop ? styles.metricCardWide : null]}>
             <Text style={styles.metricLabel}>{metric.label}</Text>
             <Text style={styles.metricValue}>{metric.value}</Text>
           </Panel>
@@ -49,7 +63,7 @@ export default function DashboardScreen({ data, config, onNavigate }: Props) {
 
       <Panel>
         <SectionTitle>দামের প্রবণতা</SectionTitle>
-        <Text style={styles.helper}>আপনার সংরক্ষিত ফসলের ৩ বছরের ইনপুটকৃত দামের গড়; কোনো তথ্য না থাকলে চার্ট দেখানো হয় না।</Text>
+        <Text style={styles.helper}>আপনার সংরক্ষিত ফসলের ৩ বছরের ইনপুটকৃত দামের গড়।</Text>
         {hasPrices ? (
           <View style={styles.chart}>
             {yearlyPrices.map((price, index) => (
@@ -80,16 +94,20 @@ export default function DashboardScreen({ data, config, onNavigate }: Props) {
             </Text>
           </View>
         </View>
-        <Text onPress={() => onNavigate("settings")} style={styles.action}>API সংযোগ কনফিগার করুন →</Text>
+        <Pressable accessibilityRole="button" onPress={() => onNavigate("settings")} style={styles.actionButton}>
+          <Text style={styles.action}>API সংযোগ কনফিগার করুন <Text style={styles.actionArrow}>→</Text></Text>
+        </Pressable>
       </Panel>
 
       <Panel>
         <SectionTitle>দ্রুত মডিউল</SectionTitle>
         <View style={styles.quickGrid}>
           {navigationItems.slice(1, 7).map((item) => (
-            <Text key={item.id} onPress={() => onNavigate(item.id)} style={styles.quickItem}>
-              {item.icon}  {item.label}
-            </Text>
+            <Pressable accessibilityRole="button" key={item.id} onPress={() => onNavigate(item.id)} style={styles.quickItem}>
+              <Text style={styles.quickIcon}>{item.icon}</Text>
+              <Text style={styles.quickLabel}>{item.label}</Text>
+              <Text style={styles.quickArrow}>↗</Text>
+            </Pressable>
           ))}
         </View>
       </Panel>
@@ -98,24 +116,39 @@ export default function DashboardScreen({ data, config, onNavigate }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#f2f7f2" },
-  content: { padding: 18, paddingBottom: 28 },
-  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 2 },
-  metricCard: { flexBasis: "47%", flexGrow: 1, marginBottom: 0, minHeight: 92, justifyContent: "center" },
-  metricLabel: { color: "#63766c", fontSize: 12, fontWeight: "600" },
-  metricValue: { color: "#19352a", fontSize: 23, fontWeight: "800", marginTop: 6 },
-  helper: { color: "#63766c", fontSize: 13, lineHeight: 19 },
+  screen: { backgroundColor: "#f4f7f2", flex: 1 },
+  content: { alignSelf: "center", maxWidth: 1180, padding: 18, paddingBottom: 32, width: "100%" },
+  contentWide: { paddingHorizontal: 34, paddingTop: 30 },
+  hero: { alignItems: "center", backgroundColor: "#153e30", borderRadius: 20, flexDirection: "row", justifyContent: "space-between", marginBottom: 28, minHeight: 158, overflow: "hidden", padding: 26 },
+  heroCopy: { flex: 1, paddingRight: 18 },
+  heroEyebrow: { color: "#b8d7c1", fontSize: 12, fontWeight: "800", letterSpacing: 0.5, marginBottom: 9 },
+  heroTitle: { color: "#fff", fontSize: 25, fontWeight: "900", lineHeight: 32 },
+  heroSubtitle: { color: "#d0e2d5", fontSize: 13, lineHeight: 20, marginTop: 6, maxWidth: 520 },
+  heroBadge: { backgroundColor: "#245743", borderColor: "#47765d", borderRadius: 14, borderWidth: 1, minWidth: 112, paddingHorizontal: 13, paddingVertical: 11 },
+  heroBadgeLabel: { color: "#b8d7c1", fontSize: 10, fontWeight: "700" },
+  heroBadgeValue: { color: "#fff", fontSize: 12, fontWeight: "800", marginTop: 5 },
+  metricGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 4 },
+  metricCard: { borderTopColor: "#72a67d", borderTopWidth: 3, flexBasis: "46%", flexGrow: 1, justifyContent: "center", marginBottom: 0, minHeight: 105 },
+  metricCardWide: { flexBasis: "22%" },
+  metricLabel: { color: "#68796f", fontSize: 12, fontWeight: "700" },
+  metricValue: { color: "#183a2d", fontSize: 25, fontWeight: "900", marginTop: 8 },
+  helper: { color: "#68796f", fontSize: 13, lineHeight: 20 },
   chart: { flexDirection: "row", height: 160, justifyContent: "space-around", marginTop: 18 },
   chartColumn: { alignItems: "center", flex: 1 },
-  chartValue: { color: "#426352", fontSize: 11 },
+  chartValue: { color: "#426352", fontSize: 11, fontWeight: "700" },
   barTrack: { backgroundColor: "#edf4ef", borderRadius: 8, flex: 1, justifyContent: "flex-end", marginVertical: 8, overflow: "hidden", width: 30 },
   bar: { backgroundColor: "#39845a", borderRadius: 8, minHeight: 3, width: "100%" },
   chartLabel: { color: "#63766c", fontSize: 12 },
   weatherRow: { alignItems: "center", flexDirection: "row", gap: 12, marginBottom: 12 },
   weatherIcon: { color: "#7a9bb5", fontSize: 32 },
   weatherCopy: { flex: 1 },
-  weatherTitle: { color: "#19352a", fontSize: 15, fontWeight: "700", marginBottom: 4 },
-  action: { color: "#247446", fontSize: 14, fontWeight: "800", paddingVertical: 6 },
-  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  quickItem: { backgroundColor: "#eff6f0", borderRadius: 10, color: "#247446", fontSize: 13, fontWeight: "700", overflow: "hidden", padding: 10 },
+  weatherTitle: { color: "#183a2d", fontSize: 15, fontWeight: "800", marginBottom: 4 },
+  actionButton: { alignSelf: "flex-start", marginTop: 2 },
+  action: { color: "#2f7b4e", fontSize: 13, fontWeight: "800", paddingVertical: 8 },
+  actionArrow: { fontSize: 16 },
+  quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  quickItem: { alignItems: "center", backgroundColor: "#f5f8f4", borderColor: "#e5ece4", borderRadius: 12, borderWidth: 1, flexDirection: "row", minHeight: 48, paddingHorizontal: 12, width: "48%" },
+  quickIcon: { color: "#2f7b4e", fontSize: 17, textAlign: "center", width: 24 },
+  quickLabel: { color: "#315b45", flex: 1, fontSize: 12, fontWeight: "700", marginLeft: 7 },
+  quickArrow: { color: "#91a296", fontSize: 13 },
 });

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { ModuleId } from "../data/navigation";
 import type { RecordBucket, WorkspaceData, WorkspaceRecord } from "../data/types";
 import { formatBengaliNumber, movingAverage, normalizeNumerals, parseNumericInput, parseYearValues } from "../services/forecast";
@@ -89,6 +89,8 @@ const bucketForModule: Partial<Record<Props["module"], RecordBucket>> = {
 };
 
 function OperationsForm({ bucket, upazila, onAdd }: { bucket: RecordBucket; upazila: string; onAdd: Props["onAdd"] }) {
+  const { width } = useWindowDimensions();
+  const desktop = width >= 980;
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -112,7 +114,12 @@ function OperationsForm({ bucket, upazila, onAdd }: { bucket: RecordBucket; upaz
     for (const field of fieldsByBucket[bucket]) {
       const value = normalizedValues[field.key] ?? "";
       if (field.required && !value) nextErrors[field.key] = "এই তথ্যটি আবশ্যক।";
-      else if (field.keyboardType === "numeric" && value && parseNumericInput(value) === null) {
+      else if (
+        field.keyboardType === "numeric"
+        && value
+        && !(bucket === "crops" && (field.key === "prices" || field.key === "yields"))
+        && parseNumericInput(value) === null
+      ) {
         nextErrors[field.key] = "শুধু শূন্য বা ধনাত্মক সংখ্যা লিখুন।";
       }
     }
@@ -168,17 +175,20 @@ function OperationsForm({ bucket, upazila, onAdd }: { bucket: RecordBucket; upaz
   return (
     <Panel>
       <SectionTitle>{bucket === "farmers" ? "নতুন কৃষক নিবন্ধন" : bucket === "crops" ? "৩ বছরের ফসলের তথ্য" : bucket === "buyers" ? "ক্রেতা/চাহিদা যোগ করুন" : bucket === "collection" ? "সংগ্রহ লগ যোগ করুন" : "নতুন আর্থিক এন্ট্রি"}</SectionTitle>
-      {fieldsByBucket[bucket].map((field) => (
-        <Field
-          key={field.key}
-          label={field.label}
-          value={values[field.key] ?? ""}
-          onChangeText={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
-          placeholder={field.placeholder}
-          keyboardType={field.keyboardType}
-          error={errors[field.key]}
-        />
-      ))}
+      <View style={styles.fieldGrid}>
+        {fieldsByBucket[bucket].map((field) => (
+          <View key={field.key} style={[styles.fieldColumn, desktop ? styles.fieldColumnWide : null]}>
+            <Field
+              label={field.label}
+              value={values[field.key] ?? ""}
+              onChangeText={(value) => setValues((current) => ({ ...current, [field.key]: value }))}
+              placeholder={field.placeholder}
+              keyboardType={field.keyboardType}
+              error={errors[field.key]}
+            />
+          </View>
+        ))}
+      </View>
       {bucket === "farmers" ? (
         <>
           <ChoiceField label="সদস্য ফি" value={feeStatus} options={["পরিশোধিত", "বাকি"]} onChange={setFeeStatus} />
@@ -294,11 +304,14 @@ function ReportsSummary({ data }: { data: WorkspaceData }) {
 }
 
 export default function OperationsScreen({ module, data, upazila, onAdd }: Props) {
+  const { width } = useWindowDimensions();
+  const desktop = width >= 980;
+  const contentStyle = [styles.content, desktop ? styles.contentWide : null];
   if (module === "reports") {
-    return <ScrollView style={styles.screen} contentContainerStyle={styles.content}><PageTitle title={titles.reports} /><ReportsSummary data={data} /></ScrollView>;
+    return <ScrollView style={styles.screen} contentContainerStyle={contentStyle}><PageTitle title={titles.reports} /><ReportsSummary data={data} /></ScrollView>;
   }
   if (module === "finance") {
-    return <ScrollView style={styles.screen} contentContainerStyle={styles.content}><PageTitle title={titles.finance} subtitle="কমিশন, প্রসেসিং চার্জ ও মাসিক ব্যয়ের হিসাব" /><FinanceSummary records={data.finance} /><OperationsForm bucket="finance" upazila={upazila} onAdd={onAdd} /><RecordList bucket="finance" records={data.finance} /></ScrollView>;
+    return <ScrollView style={styles.screen} contentContainerStyle={contentStyle}><PageTitle title={titles.finance} subtitle="কমিশন, প্রসেসিং চার্জ ও মাসিক ব্যয়ের হিসাব" /><FinanceSummary records={data.finance} /><OperationsForm bucket="finance" upazila={upazila} onAdd={onAdd} /><RecordList bucket="finance" records={data.finance} /></ScrollView>;
   }
 
   const bucket = bucketForModule[module];
@@ -306,7 +319,7 @@ export default function OperationsScreen({ module, data, upazila, onAdd }: Props
   const moduleRecords = data[bucket];
   const isForecast = module === "forecast";
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.screen} contentContainerStyle={contentStyle}>
       <PageTitle title={titles[module]} subtitle={module === "farmers" ? "কৃষকের জমি, ফসল, সদস্য ফি ও যোগাযোগের তথ্য" : module === "buyers" ? "পাইকার, দোকানদার, রেস্টুরেন্ট ও প্রক্রিয়াজাতকারীর চাহিদা" : module === "collection" ? "সংগ্রহ, grading, শুকানো, packaging ও অপচয়" : undefined} />
       {module === "farmers" ? <Notice>SMS/WhatsApp/ভয়েস চ্যানেল পছন্দ সংরক্ষিত হয়; বার্তা পাঠাতে আলাদা provider/API সংযোগ লাগবে।</Notice> : null}
       {isForecast ? <ForecastSummary crops={data.crops} /> : <OperationsForm bucket={bucket} upazila={upazila} onAdd={onAdd} />}
@@ -355,12 +368,16 @@ function RecordList({ bucket, records }: { bucket: RecordBucket; records: Worksp
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: "#f2f7f2", flex: 1 },
-  content: { padding: 18, paddingBottom: 28 },
-  record: { borderBottomColor: "#e5ede7", borderBottomWidth: 1, paddingVertical: 12 },
-  recordTitle: { color: "#19352a", fontSize: 15, fontWeight: "800" },
-  recordMeta: { color: "#63766c", fontSize: 13, lineHeight: 20, marginTop: 3 },
-  recordAdvice: { color: "#247446", fontSize: 13, lineHeight: 19, marginTop: 7 },
-  summaryLine: { alignItems: "center", borderBottomColor: "#e5ede7", borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", paddingVertical: 10 },
-  money: { color: "#19352a", fontSize: 14, fontWeight: "800" },
+  screen: { backgroundColor: "#f4f7f2", flex: 1 },
+  content: { alignSelf: "center", maxWidth: 1180, padding: 18, paddingBottom: 32, width: "100%" },
+  contentWide: { paddingHorizontal: 34, paddingTop: 30 },
+  fieldGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  fieldColumn: { width: "100%" },
+  fieldColumnWide: { flexBasis: "48%", flexGrow: 1, minWidth: 260 },
+  record: { borderBottomColor: "#e8eee8", borderBottomWidth: 1, paddingVertical: 14 },
+  recordTitle: { color: "#183a2d", fontSize: 15, fontWeight: "800" },
+  recordMeta: { color: "#68796f", fontSize: 13, lineHeight: 20, marginTop: 4 },
+  recordAdvice: { color: "#2f7b4e", fontSize: 13, lineHeight: 20, marginTop: 8 },
+  summaryLine: { alignItems: "center", borderBottomColor: "#e8eee8", borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", paddingVertical: 11 },
+  money: { color: "#183a2d", fontSize: 14, fontWeight: "800" },
 });
